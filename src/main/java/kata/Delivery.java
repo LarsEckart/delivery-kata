@@ -23,6 +23,10 @@ public final class Delivery {
         this.onTime = onTime;
     }
 
+    public DeliveryTime getDeliveryTime() {
+        return new DeliveryTime(getTimeOfDelivery(), getLocation());
+    }
+
     public Location getLocation() {
         Location getLocation = new Location(getLatitude(), getLongitude());
         return getLocation;

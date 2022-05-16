@@ -18,24 +18,18 @@ public class DeliveryService {
     public static final Duration ON_TIME_THRESHOLD = Duration.ofMinutes(10);
 
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryRepository repository, DeliveryEvent deliveryEvent) {
-        Action1<Delivery> saver = repository::save;
-        List<Delivery> deliverySchedule = repository.findTodaysDeliveries();
-
-        onDelivery(emailGateway, mapService, deliveryEvent, saver, deliverySchedule);
+        onDelivery(emailGateway, mapService, deliveryEvent, repository::save, repository.findTodaysDeliveries());
     }
 
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, List<Delivery> deliverySchedule) {
         log.info("update delivery");
-        int index = getIndexOfDelivery(deliverySchedule, (Delivery d) -> d.getId() == deliveryEvent.id());
+        IndexSection<Delivery> indexSection = IndexSection.getIndexSection(deliverySchedule, d -> d.getId() == deliveryEvent.id());
 
-        Delivery delivery = deliverySchedule.get(index);
-        Delivery previous = 0 < index ? deliverySchedule.get(index - 1) : null;
-        Tuple<Delivery, MyEmail> tuple = handleDelivery(mapService, deliveryEvent, delivery, previous);
+        Tuple<Delivery, MyEmail> tuple = handleDelivery(mapService, deliveryEvent, indexSection.current(), indexSection.previous());
         saver.call(tuple.getFirst());
         emailGateway.send(tuple.getSecond());
 
-        Delivery nextDelivery = index < deliverySchedule.size() - 1 ? deliverySchedule.get(index + 1) : null;
-        getNextDeliveryNotification(mapService, nextDelivery, deliveryEvent.getLocation()).ifPresent(emailGateway::send);
+        getNextDeliveryNotification(mapService, indexSection.next(), deliveryEvent.getLocation()).ifPresent(emailGateway::send);
     }
 
     private static Tuple<Delivery, MyEmail> handleDelivery(MapService mapService, DeliveryEvent deliveryEvent, Delivery delivery, Delivery previous) {
@@ -48,13 +42,11 @@ public class DeliveryService {
         return new Tuple<>(delivery, getDeliveryEmail(delivery));
     }
 
-    private static void updateAverageSpeed(MapService mapService, Delivery delivery, Delivery previous) {
+    private static double updateAverageSpeed(MapService mapService, Delivery delivery, Delivery previous) {
         if (delivery.isOnTime() || previous == null) {
-            return;
+            return mapService.getAverageSpeed();
         }
-        DeliveryTime time1 = new DeliveryTime(previous.getTimeOfDelivery(), previous.getLocation());
-        DeliveryTime time2 = new DeliveryTime(delivery.getTimeOfDelivery(), delivery.getLocation());
-        mapService.updateAverageSpeed(time1, time2);
+        return mapService.updateAverageSpeed(previous.getDeliveryTime(), delivery.getDeliveryTime());
     }
 
     private static MyEmail getDeliveryEmail(Delivery delivery) {
@@ -66,15 +58,6 @@ public class DeliveryService {
                         Click <a href='http://example.com/feedback'>here</a>""".formatted(
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
         return new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message);
-    }
-
-    private static <T> int getIndexOfDelivery(List<T> deliverySchedule, Function1<T, Boolean> predicate) {
-        for (int i = 0; i < deliverySchedule.size(); i++) {
-            if (predicate.call(deliverySchedule.get(i))) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, Delivery next, Location previousLocation) {

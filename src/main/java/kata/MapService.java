@@ -27,12 +27,6 @@ public class MapService {
         return Duration.ofMinutes(v.longValue());
     }
 
-    public void updateAverageSpeed(Duration elapsedTime, Location location, Location other) {
-        var distance = this.calculateDistance(location, other);
-        var updatedSpeed = distance / (elapsedTime.getSeconds() / (double) SECONDS_PER_HOUR);
-        this.averageSpeed = updatedSpeed;
-    }
-
     private double calculateDistance(Location start, Location end) {
         var d1 = start.latitudeInRadians();
         var num1 = start.longitudeInRadians();
@@ -44,8 +38,18 @@ public class MapService {
         return R * (2.0 * Math.atan2(Math.sqrt(d3), Math.sqrt(1.0 - d3)));
     }
 
-    public void updateAverageSpeed(DeliveryTime time1, DeliveryTime time2) {
+    public double updateAverageSpeed(DeliveryTime time1, DeliveryTime time2) {
+        if (time1 == null || time2 == null) {
+            return this.averageSpeed;
+        }
         Duration elapsedTime = Duration.between(time1.time(), time2.time());
-        updateAverageSpeed(elapsedTime, time1.location(), time2.location());
+        var distance = this.calculateDistance(time1.location(), time2.location());
+        var updatedSpeed = distance / (elapsedTime.getSeconds() / (double) SECONDS_PER_HOUR);
+        this.averageSpeed = updatedSpeed;
+        return this.averageSpeed;
+    }
+
+    public double getAverageSpeed() {
+        return this.averageSpeed;
     }
 }
