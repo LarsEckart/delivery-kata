@@ -18,10 +18,8 @@ public class MapService {
     private final int SECONDS_PER_HOUR = 3600;
     private final double R = 6373.0;
 
-    public Duration calculateETA(float latitude, float longitude,
-                                 float otherLatitude, float otherLongitude) {
-        var distance = this.calculateDistance(latitude, longitude,
-                otherLatitude, otherLongitude);
+    public Duration calculateETA(Location start, Location end) {
+        var distance = this.calculateDistance(start, end);
         if (averageSpeed == 0) {
             averageSpeed = DEFAULT_AVERAGE_SPEED;
         }
@@ -29,18 +27,17 @@ public class MapService {
         return Duration.ofMinutes(v.longValue());
     }
 
-    public void updateAverageSpeed(Duration elapsedTime,
-                                   float latitude, float longitude, float otherLatitude, float otherLongitude) {
-        var distance = this.calculateDistance(latitude, longitude, otherLatitude, otherLongitude);
+    public void updateAverageSpeed(Duration elapsedTime, Location location, Location other) {
+        var distance = this.calculateDistance(location, other);
         var updatedSpeed = distance / (elapsedTime.getSeconds() / (double) SECONDS_PER_HOUR);
         this.averageSpeed = updatedSpeed;
     }
 
-    private double calculateDistance(float latitude, float longitude, float otherLatitude, float otherLongitude) {
-        var d1 = latitude * (Math.PI / 180.0);
-        var num1 = longitude * (Math.PI / 180.0);
-        var d2 = otherLatitude * (Math.PI / 180.0);
-        var num2 = otherLongitude * (Math.PI / 180.0) - num1;
+    private double calculateDistance(Location start, Location end) {
+        var d1 = start.latitudeInRadians();
+        var num1 = start.longitudeInRadians();
+        var d2 = end.latitudeInRadians();
+        var num2 = end.longitudeInRadians() - num1;
         var d3 = Math.pow(Math.sin((d2 - d1) / 2.0), 2.0) + Math.cos(d1) * Math.cos(d2) * Math.pow(
                 Math.sin(num2 / 2.0), 2.0);
 

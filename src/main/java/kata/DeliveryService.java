@@ -1,5 +1,6 @@
 package kata;
 
+import com.spun.util.Tuple;
 import org.lambda.actions.Action1;
 import org.lambda.functions.Function1;
 import org.slf4j.Logger;
@@ -28,13 +29,15 @@ public class DeliveryService {
         
         Delivery delivery = deliverySchedule.get(index);
         Delivery previous = 0 < index ? deliverySchedule.get(index - 1) : null;
-        saver.call(handleDelivery(emailGateway, mapService, deliveryEvent, delivery, previous));
+        Tuple<Delivery, MyEmail> tuple = handleDelivery(mapService, deliveryEvent, delivery, previous);
+        saver.call(tuple.getFirst());
+        emailGateway.send(tuple.getSecond());
 
         Delivery nextDelivery = index < deliverySchedule.size() - 1 ? deliverySchedule.get(index + 1) : null;
         getNextDeliveryNotification(mapService, deliveryEvent, nextDelivery).ifPresent(emailGateway::send);
     }
 
-    private static Delivery handleDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Delivery delivery, Delivery previous) {
+    private static Tuple<Delivery, MyEmail> handleDelivery(MapService mapService, DeliveryEvent deliveryEvent, Delivery delivery, Delivery previous) {
         delivery.setArrived(true);
         Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
 
@@ -43,6 +46,18 @@ public class DeliveryService {
             delivery.setOnTime(true);
 
         delivery.setTimeOfDelivery(deliveryEvent.timeOfDelivery());
+
+        if (!delivery.isOnTime() && previous != null) {
+            Duration elapsedTime = Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
+            mapService.updateAverageSpeed(
+                    elapsedTime,
+                    new Location(previous.getLatitude(), previous.getLongitude()),
+                    new Location(delivery.getLatitude(), delivery.getLongitude()));
+        }
+        return new Tuple<>(delivery, getDeliveryEmail(delivery));
+    }
+
+    private static MyEmail getDeliveryEmail(Delivery delivery) {
         String message =
                 """
                         Regarding your delivery today at %s.
@@ -50,17 +65,7 @@ public class DeliveryService {
                                                 
                         Click <a href='http://example.com/feedback'>here</a>""".formatted(
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
-        emailGateway.send(new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message));
-
-        if (!delivery.isOnTime() && previous != null) {
-            Duration elapsedTime =
-                    Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
-            mapService.updateAverageSpeed(
-                    elapsedTime, previous.getLatitude(),
-                    previous.getLongitude(), delivery.getLatitude(),
-                    delivery.getLongitude());
-        }
-        return delivery;
+        return new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message);
     }
 
     private static <T> int getIndexOfDelivery(List<T> deliverySchedule, Function1<T, Boolean> predicate) {
@@ -76,16 +81,15 @@ public class DeliveryService {
         if (next == null) {
             return Optional.empty();
         }
-        var nextEta = mapService.calculateETA(
-                previous.latitude(), previous.longitude(),
-                next.getLatitude(), next.getLongitude());
+        var nextEta = mapService.calculateETA(previous.getLocation(), next.getLocation());
         String subject = "Your delivery will arrive soon";
         var message =
                 "Your delivery to [%s,%s] is next, estimated time of arrival is in %s minutes. Be ready!"
                         .formatted(
                                 next.getLatitude(),
                                 next.getLongitude(),
-                                nextEta.getSeconds() / 60);
+                                nextEta.toMinutes());
         return Optional.of(new MyEmail(next.getContactEmail(), subject, message));
     }
+
 }
