@@ -43,4 +43,9 @@ public class MapService {
 
         return R * (2.0 * Math.atan2(Math.sqrt(d3), Math.sqrt(1.0 - d3)));
     }
+
+    public void updateAverageSpeed(DeliveryTime time1, DeliveryTime time2) {
+        Duration elapsedTime = Duration.between(time1.time(), time2.time());
+        updateAverageSpeed(elapsedTime, time1.location(), time2.location());
+    }
 }

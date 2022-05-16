@@ -52,8 +52,9 @@ public class DeliveryService {
         if (delivery.isOnTime() || previous == null) {
             return;
         }
-        Duration elapsedTime = Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
-        mapService.updateAverageSpeed(elapsedTime, previous.getLocation(), delivery.getLocation());
+        DeliveryTime time1 = new DeliveryTime(previous.getTimeOfDelivery(), previous.getLocation());
+        DeliveryTime time2 = new DeliveryTime(delivery.getTimeOfDelivery(), delivery.getLocation());
+        mapService.updateAverageSpeed(time1, time2);
     }
 
     private static MyEmail getDeliveryEmail(Delivery delivery) {
