@@ -1,6 +1,7 @@
 package kata;
 
 import org.lambda.actions.Action1;
+import org.lambda.functions.Function1;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -23,45 +24,52 @@ public class DeliveryService {
 
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, List<Delivery> deliverySchedule) {
         log.info("update delivery");
-        Delivery nextDelivery = null;
-        for (int i = 0; i < deliverySchedule.size(); i++) {
-            Delivery delivery = deliverySchedule.get(i);
-            if (deliveryEvent.id() == delivery.getId()) {
-                Delivery previous = 0 < i ? deliverySchedule.get(i - 1) : null;
-                Delivery next = i < deliverySchedule.size() - 1 ? deliverySchedule.get(i + 1) : null;
-                nextDelivery = next;
-                delivery.setArrived(true);
-                Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
-
-                // fast delivery when less than fifteen minutes
-                if (d.toMinutes() < 10 == true)
-                    delivery.setOnTime(true);
-
-                delivery.setTimeOfDelivery(deliveryEvent.timeOfDelivery());
-                String message =
-                        """
-                                Regarding your delivery today at %s.
-                                How likely would you be to recommend this delivery service to a friend? 
-                                                        
-                                Click <a href='http://example.com/feedback'>here</a>""".formatted(
-                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
-                emailGateway.send(new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message));
-
-                if (!delivery.isOnTime() && deliverySchedule.size() > 1 && i > 0) {
-                    var previousDelivery = deliverySchedule.get(i - 1);
-                    Duration elapsedTime =
-                            Duration.between(previousDelivery.getTimeOfDelivery(), delivery.getTimeOfDelivery());
-                    mapService.updateAverageSpeed(
-                            elapsedTime, previousDelivery.getLatitude(),
-                            previousDelivery.getLongitude(), delivery.getLatitude(),
-                            delivery.getLongitude());
-                }
-                saver.call(delivery);
-            }
-        }
+        int index = getIndexOfDelivery(deliverySchedule, (Delivery d) -> d.getId() == deliveryEvent.id());
+        Delivery delivery = deliverySchedule.get(index);
+        Delivery previous = 0 < index ? deliverySchedule.get(index - 1) : null;
+        Delivery nextDelivery = index < deliverySchedule.size() - 1 ? deliverySchedule.get(index + 1) : null;
+        extracted(emailGateway, mapService, deliveryEvent, saver, delivery, previous);
 
 
         getNextDeliveryNotification(mapService, deliveryEvent, nextDelivery).ifPresent(emailGateway::send);
+    }
+
+    private static <T> int getIndexOfDelivery(List<T> deliverySchedule, Function1<T, Boolean> predicate) {
+        for (int i = 0; i < deliverySchedule.size(); i++) {
+            if (predicate.call(deliverySchedule.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static void extracted(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, Delivery delivery, Delivery previous) {
+        delivery.setArrived(true);
+        Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
+
+        // fast delivery when less than fifteen minutes
+        if (d.toMinutes() < 10 == true)
+            delivery.setOnTime(true);
+
+        delivery.setTimeOfDelivery(deliveryEvent.timeOfDelivery());
+        String message =
+                """
+                        Regarding your delivery today at %s.
+                        How likely would you be to recommend this delivery service to a friend? 
+                                                
+                        Click <a href='http://example.com/feedback'>here</a>""".formatted(
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
+        emailGateway.send(new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message));
+
+        if (!delivery.isOnTime() && previous != null) {
+            Duration elapsedTime =
+                    Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
+            mapService.updateAverageSpeed(
+                    elapsedTime, previous.getLatitude(),
+                    previous.getLongitude(), delivery.getLatitude(),
+                    delivery.getLongitude());
+        }
+        saver.call(delivery);
     }
 
     public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, DeliveryEvent previous, Delivery next) {
