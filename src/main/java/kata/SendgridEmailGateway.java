@@ -20,6 +20,9 @@ public class SendgridEmailGateway implements EmailGateway {
     private static final Logger log = getLogger(SendgridEmailGateway.class);
 
     @Override
+    public void send(MyEmail email) {
+        send(email.contactEmail(), email.subject(), email.message());
+    }
     public void send(String recipient, String subject, String message) {
         Email from = new Email("deliveries@example.com");
         Content content = new Content("text/plain", message);

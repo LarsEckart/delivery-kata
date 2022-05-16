@@ -64,7 +64,7 @@ class DeliveryTest {
 
         StoryBoard storyBoard = new StoryBoard();
 
-        DeliveryService.onDelivery((t, s, m) -> storyBoard.addFrame("send email", String.format("to:%s\nsubject:%s\nmessage:%s\n", t, s, m)),
+        DeliveryService.onDelivery((e) -> storyBoard.addFrame("send email", e),
                 new MapService(), deliveryEvent, d -> delivery[0] = d, deliveries);
 
         storyBoard.addFrame("saved", JsonUtils.asJson(delivery[0], b -> b.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())));
@@ -86,7 +86,7 @@ class DeliveryTest {
 
         StoryBoard storyBoard = new StoryBoard();
 
-        DeliveryService.onDelivery((t, s, m) -> storyBoard.addFrame("send email", String.format("to:%s\nsubject:%s\nmessage:%s\n", t, s, m)),
+        DeliveryService.onDelivery((e) -> storyBoard.addFrame("send email", e),
                 new MapService(), deliveryEvent, d -> delivery[0] = d, deliveries);
 
         storyBoard.addFrame("saved", JsonUtils.asJson(delivery[0], b -> b.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())));

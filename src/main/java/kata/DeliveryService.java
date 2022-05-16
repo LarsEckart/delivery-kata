@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -41,7 +42,7 @@ public class DeliveryService {
                                                         
                                 Click <a href='http://example.com/feedback'>here</a>""".formatted(
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
-                emailGateway.send(delivery.getContactEmail(), "Your feedback is important to us", message);
+                emailGateway.send(new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message));
                 if (deliverySchedule.size() > i + 1) {
                     nextDelivery = deliverySchedule.get(i + 1);
                 }
@@ -59,23 +60,24 @@ public class DeliveryService {
             }
         }
 
-        handleNextDelivery(emailGateway, mapService, deliveryEvent, nextDelivery);
+
+        getNextDeliveryNotification(mapService, deliveryEvent, nextDelivery).ifPresent(emailGateway::send);
     }
 
-    public static void handleNextDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Delivery nextDelivery) {
-        if (nextDelivery == null) {
-            return;
+    public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, DeliveryEvent previous, Delivery next) {
+        if (next == null) {
+            return Optional.empty();
         }
         var nextEta = mapService.calculateETA(
-                deliveryEvent.latitude(), deliveryEvent.longitude(),
-                nextDelivery.getLatitude(), nextDelivery.getLongitude());
+                previous.latitude(), previous.longitude(),
+                next.getLatitude(), next.getLongitude());
         String subject = "Your delivery will arrive soon";
         var message =
                 "Your delivery to [%s,%s] is next, estimated time of arrival is in %s minutes. Be ready!"
                         .formatted(
-                                nextDelivery.getLatitude(),
-                                nextDelivery.getLongitude(),
+                                next.getLatitude(),
+                                next.getLongitude(),
                                 nextEta.getSeconds() / 60);
-        emailGateway.send(nextDelivery.getContactEmail(), subject, message);
+        return Optional.of(new MyEmail(next.getContactEmail(), subject, message));
     }
 }
