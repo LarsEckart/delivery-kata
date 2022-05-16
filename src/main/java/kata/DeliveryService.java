@@ -59,18 +59,23 @@ public class DeliveryService {
             }
         }
 
-        if (nextDelivery != null) {
-            var nextEta = mapService.calculateETA(
-                    deliveryEvent.latitude(), deliveryEvent.longitude(),
-                    nextDelivery.getLatitude(), nextDelivery.getLongitude());
-            String subject = "Your delivery will arrive soon";
-            var message =
-                    "Your delivery to [%s,%s] is next, estimated time of arrival is in %s minutes. Be ready!"
-                            .formatted(
-                                    nextDelivery.getLatitude(),
-                                    nextDelivery.getLongitude(),
-                                    nextEta.getSeconds() / 60);
-            emailGateway.send(nextDelivery.getContactEmail(), subject, message);
+        handleNextDelivery(emailGateway, mapService, deliveryEvent, nextDelivery);
+    }
+
+    public static void handleNextDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Delivery nextDelivery) {
+        if (nextDelivery == null) {
+            return;
         }
+        var nextEta = mapService.calculateETA(
+                deliveryEvent.latitude(), deliveryEvent.longitude(),
+                nextDelivery.getLatitude(), nextDelivery.getLongitude());
+        String subject = "Your delivery will arrive soon";
+        var message =
+                "Your delivery to [%s,%s] is next, estimated time of arrival is in %s minutes. Be ready!"
+                        .formatted(
+                                nextDelivery.getLatitude(),
+                                nextDelivery.getLongitude(),
+                                nextEta.getSeconds() / 60);
+        emailGateway.send(nextDelivery.getContactEmail(), subject, message);
     }
 }
