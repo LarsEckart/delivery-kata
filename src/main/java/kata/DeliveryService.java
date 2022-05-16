@@ -2,7 +2,6 @@ package kata;
 
 import com.spun.util.Tuple;
 import org.lambda.actions.Action1;
-import org.lambda.functions.Function1;
 import org.slf4j.Logger;
 
 import java.time.Duration;
