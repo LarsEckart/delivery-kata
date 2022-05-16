@@ -41,7 +41,7 @@ public class DeliveryController {
     @Post
     public HttpResponse<Void> onDelivery(DeliveryEvent deliveryEvent) {
         try {
-            DeliveryService.applesauce(emailGateway, mapService, repository, deliveryEvent);
+            DeliveryService.onDelivery(emailGateway, mapService, repository, deliveryEvent);
             return HttpResponse.ok();
         } catch (Exception e) {
             // if status is not in 2xx range our http client in tests throws exception

@@ -1,0 +1,19 @@
+send email:
+to:llewellyn@example.com
+subject:Your feedback is important to us
+message:Regarding your delivery today at 2000-01-02 03:13.
+How likely would you be to recommend this delivery service to a friend?
+
+Click <a href='http://example.com/feedback'>here</a>
+
+
+saved:
+{
+  "id": 1,
+  "contactEmail": "llewellyn@example.com",
+  "latitude": 58.377,
+  "longitude": 26.727,
+  "timeOfDelivery": "2000-01-02T03:13:05",
+  "arrived": true,
+  "onTime": true
+}

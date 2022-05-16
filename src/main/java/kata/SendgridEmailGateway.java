@@ -15,14 +15,15 @@ import java.io.IOException;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Singleton
-public class SendgridEmailGateway {
+public class SendgridEmailGateway implements EmailGateway {
 
     private static final Logger log = getLogger(SendgridEmailGateway.class);
 
-    public void send(String to, String s, String m) {
+    @Override
+    public void send(String recipient, String subject, String message) {
         Email from = new Email("deliveries@example.com");
-        Content content = new Content("text/plain", m);
-        Mail mail = new Mail(from, s, new Email(to), content);
+        Content content = new Content("text/plain", message);
+        Mail mail = new Mail(from, subject, new Email(recipient), content);
 
         SendGrid sg = new SendGrid(System.getenv("SENDGRID_API_KEY"));
 

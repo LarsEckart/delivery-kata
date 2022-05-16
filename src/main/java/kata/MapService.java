@@ -10,8 +10,9 @@ Somewhat naive implementation/calculations but good enough for now.
 @Singleton
 public class MapService {
 
+    private static final double DEFAULT_AVERAGE_SPEED = 50.0;
     // in km/h
-    private double averageSpeed = 50.0;
+    private double averageSpeed = DEFAULT_AVERAGE_SPEED;
 
     private final int MINUTES_PER_HOUR = 60;
     private final int SECONDS_PER_HOUR = 3600;
@@ -21,6 +22,9 @@ public class MapService {
                                  float otherLatitude, float otherLongitude) {
         var distance = this.calculateDistance(latitude, longitude,
                 otherLatitude, otherLongitude);
+        if (averageSpeed == 0) {
+            averageSpeed = DEFAULT_AVERAGE_SPEED;
+        }
         Double v = distance / this.averageSpeed * MINUTES_PER_HOUR;
         return Duration.ofMinutes(v.longValue());
     }
