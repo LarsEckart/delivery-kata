@@ -15,6 +15,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class DeliveryService {
 
     private static final Logger log = getLogger(DeliveryService.class);
+    public static final Duration ON_TIME_THRESHOLD = Duration.ofMinutes(10);
 
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryRepository repository, DeliveryEvent deliveryEvent) {
         Action1<Delivery> saver = repository::save;
@@ -26,7 +27,7 @@ public class DeliveryService {
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, List<Delivery> deliverySchedule) {
         log.info("update delivery");
         int index = getIndexOfDelivery(deliverySchedule, (Delivery d) -> d.getId() == deliveryEvent.id());
-        
+
         Delivery delivery = deliverySchedule.get(index);
         Delivery previous = 0 < index ? deliverySchedule.get(index - 1) : null;
         Tuple<Delivery, MyEmail> tuple = handleDelivery(mapService, deliveryEvent, delivery, previous);
@@ -34,27 +35,25 @@ public class DeliveryService {
         emailGateway.send(tuple.getSecond());
 
         Delivery nextDelivery = index < deliverySchedule.size() - 1 ? deliverySchedule.get(index + 1) : null;
-        getNextDeliveryNotification(mapService, deliveryEvent, nextDelivery).ifPresent(emailGateway::send);
+        getNextDeliveryNotification(mapService, nextDelivery, deliveryEvent.getLocation()).ifPresent(emailGateway::send);
     }
 
     private static Tuple<Delivery, MyEmail> handleDelivery(MapService mapService, DeliveryEvent deliveryEvent, Delivery delivery, Delivery previous) {
         delivery.setArrived(true);
         Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
-
-        // fast delivery when less than fifteen minutes
-        if (d.toMinutes() < 10 == true)
-            delivery.setOnTime(true);
-
+        delivery.setOnTime(d.toMinutes() < ON_TIME_THRESHOLD.toMinutes());
         delivery.setTimeOfDelivery(deliveryEvent.timeOfDelivery());
 
-        if (!delivery.isOnTime() && previous != null) {
-            Duration elapsedTime = Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
-            mapService.updateAverageSpeed(
-                    elapsedTime,
-                    new Location(previous.getLatitude(), previous.getLongitude()),
-                    new Location(delivery.getLatitude(), delivery.getLongitude()));
-        }
+        updateAverageSpeed(mapService, delivery, previous);
         return new Tuple<>(delivery, getDeliveryEmail(delivery));
+    }
+
+    private static void updateAverageSpeed(MapService mapService, Delivery delivery, Delivery previous) {
+        if (delivery.isOnTime() || previous == null) {
+            return;
+        }
+        Duration elapsedTime = Duration.between(previous.getTimeOfDelivery(), delivery.getTimeOfDelivery());
+        mapService.updateAverageSpeed(elapsedTime, previous.getLocation(), delivery.getLocation());
     }
 
     private static MyEmail getDeliveryEmail(Delivery delivery) {
@@ -77,11 +76,11 @@ public class DeliveryService {
         return -1;
     }
 
-    public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, DeliveryEvent previous, Delivery next) {
+    public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, Delivery next, Location previousLocation) {
         if (next == null) {
             return Optional.empty();
         }
-        var nextEta = mapService.calculateETA(previous.getLocation(), next.getLocation());
+        var nextEta = mapService.calculateETA(previousLocation, next.getLocation());
         String subject = "Your delivery will arrive soon";
         var message =
                 "Your delivery to [%s,%s] is next, estimated time of arrival is in %s minutes. Be ready!"
