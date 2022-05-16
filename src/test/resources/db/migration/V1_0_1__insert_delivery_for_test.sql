@@ -1,0 +1,3 @@
+-- no need anymore, we now have an endpoint to create new delivery
+-- INSERT INTO Delivery (email, date_of_order, arrived, onTime, latitude, longitude)
+-- VALUES ('test@example.com', CURRENT_TIMESTAMP, false, false, 58.368349, 26.709084);
