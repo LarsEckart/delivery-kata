@@ -25,25 +25,16 @@ public class DeliveryService {
     public static void onDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, List<Delivery> deliverySchedule) {
         log.info("update delivery");
         int index = getIndexOfDelivery(deliverySchedule, (Delivery d) -> d.getId() == deliveryEvent.id());
+        
         Delivery delivery = deliverySchedule.get(index);
         Delivery previous = 0 < index ? deliverySchedule.get(index - 1) : null;
+        saver.call(handleDelivery(emailGateway, mapService, deliveryEvent, delivery, previous));
+
         Delivery nextDelivery = index < deliverySchedule.size() - 1 ? deliverySchedule.get(index + 1) : null;
-        extracted(emailGateway, mapService, deliveryEvent, saver, delivery, previous);
-
-
         getNextDeliveryNotification(mapService, deliveryEvent, nextDelivery).ifPresent(emailGateway::send);
     }
 
-    private static <T> int getIndexOfDelivery(List<T> deliverySchedule, Function1<T, Boolean> predicate) {
-        for (int i = 0; i < deliverySchedule.size(); i++) {
-            if (predicate.call(deliverySchedule.get(i))) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static void extracted(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Action1<Delivery> saver, Delivery delivery, Delivery previous) {
+    private static Delivery handleDelivery(EmailGateway emailGateway, MapService mapService, DeliveryEvent deliveryEvent, Delivery delivery, Delivery previous) {
         delivery.setArrived(true);
         Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
 
@@ -69,7 +60,16 @@ public class DeliveryService {
                     previous.getLongitude(), delivery.getLatitude(),
                     delivery.getLongitude());
         }
-        saver.call(delivery);
+        return delivery;
+    }
+
+    private static <T> int getIndexOfDelivery(List<T> deliverySchedule, Function1<T, Boolean> predicate) {
+        for (int i = 0; i < deliverySchedule.size(); i++) {
+            if (predicate.call(deliverySchedule.get(i))) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static Optional<MyEmail> getNextDeliveryNotification(MapService mapService, DeliveryEvent previous, Delivery next) {
