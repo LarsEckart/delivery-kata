@@ -27,6 +27,9 @@ public class DeliveryService {
         for (int i = 0; i < deliverySchedule.size(); i++) {
             Delivery delivery = deliverySchedule.get(i);
             if (deliveryEvent.id() == delivery.getId()) {
+                Delivery previous = 0 < i ? deliverySchedule.get(i - 1) : null;
+                Delivery next = i < deliverySchedule.size() - 1 ? deliverySchedule.get(i + 1) : null;
+                nextDelivery = next;
                 delivery.setArrived(true);
                 Duration d = Duration.between(delivery.getTimeOfDelivery(), deliveryEvent.timeOfDelivery());
 
@@ -43,9 +46,6 @@ public class DeliveryService {
                                 Click <a href='http://example.com/feedback'>here</a>""".formatted(
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
                 emailGateway.send(new MyEmail(delivery.getContactEmail(), "Your feedback is important to us", message));
-                if (deliverySchedule.size() > i + 1) {
-                    nextDelivery = deliverySchedule.get(i + 1);
-                }
 
                 if (!delivery.isOnTime() && deliverySchedule.size() > 1 && i > 0) {
                     var previousDelivery = deliverySchedule.get(i - 1);
