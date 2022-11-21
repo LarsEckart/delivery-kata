@@ -3,7 +3,7 @@ plugins {
     id 'jacoco'
     id 'info.solidsoft.pitest' version '1.9.0'
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("io.micronaut.application") version "3.6.4"
+    id("io.micronaut.application") version "3.6.5"
     id("io.micronaut.aot") version "3.6.4"
 }
 
