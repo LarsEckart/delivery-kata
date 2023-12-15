@@ -1,16 +1,9 @@
 plugins {
     id 'java'
-    id 'jacoco'
     id 'info.solidsoft.pitest' version '1.15.0'
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("io.micronaut.application") version "3.7.10"
     id("io.micronaut.aot") version "3.7.10"
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
 }
 
 repositories {
@@ -75,20 +68,6 @@ test {
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
-    }
-    finalizedBy jacocoTestReport
-}
-
-jacoco {
-    toolVersion = "0.8.7"
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.required = false
-        csv.required = false
-        html.destination file("${buildDir}/jacocoHtml")
     }
 }
 
