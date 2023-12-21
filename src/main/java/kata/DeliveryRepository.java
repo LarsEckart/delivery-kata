@@ -4,8 +4,7 @@ import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.jdbc.runtime.JdbcOperations;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 
-import javax.transaction.Transactional;
-import javax.validation.constraints.Email;
+import jakarta.transaction.Transactional;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.ArrayList;

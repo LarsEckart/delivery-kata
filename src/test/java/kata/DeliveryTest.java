@@ -27,7 +27,7 @@ class DeliveryTest {
                   "latitude": 58.377065,
                   "longitude": 26.727897
                 }"""
-        );
+        ).header("Content-Type", "application/json");
 
         client.toBlocking().exchange(postRequest);
         postRequest = HttpRequest.POST("/delivery", """

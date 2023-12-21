@@ -1,10 +1,10 @@
 package kata;
 
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.Consumes;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 
@@ -28,9 +28,8 @@ public class DeliveryController {
     MapService mapService;
 
 
-    @Consumes({MediaType.APPLICATION_JSON})
     @Post("/new")
-    public HttpResponse<String> newDelivery(NewDelivery newDelivery) {
+    public HttpResponse<String> newDelivery(@Body NewDelivery newDelivery) {
         log.info("create new delivery");
         if (newDelivery.email.isEmpty()) {
             return HttpResponse.badRequest("email is mandatory for all deliveries");
@@ -39,12 +38,12 @@ public class DeliveryController {
         return HttpResponse.ok("all good");
     }
 
-    private record NewDelivery(String email, float latitude, float longitude) {
+    @Serdeable
+    public record NewDelivery(String email, float latitude, float longitude) {
     }
 
-    @Consumes({MediaType.APPLICATION_JSON})
     @Post
-    public HttpResponse<Void> onDelivery(DeliveryEvent deliveryEvent) {
+    public HttpResponse<Void> onDelivery(@Body DeliveryEvent deliveryEvent) {
         log.info("update delivery");
         try {
             List<Delivery> deliverySchedule = repository.findTodaysDeliveries();
@@ -63,8 +62,8 @@ public class DeliveryController {
                     String message =
                             """
                                     Regarding your delivery today at %s.
-                                    How likely would you be to recommend this delivery service to a friend? 
-                                                            
+                                    How likely would you be to recommend this delivery service to a friend?
+                                                                        
                                     Click <a href='http://example.com/feedback'>here</a>""".formatted(
                                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(delivery.getTimeOfDelivery()));
                     emailGateway.send(delivery.getContactEmail(), "Your feedback is important to us", message);
@@ -106,7 +105,8 @@ public class DeliveryController {
         }
     }
 
-    private record DeliveryEvent(long id, LocalDateTime timeOfDelivery, float latitude, float longitude) {
+    @Serdeable
+    public record DeliveryEvent(long id, LocalDateTime timeOfDelivery, float latitude, float longitude) {
     }
 
 }
