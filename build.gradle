@@ -28,7 +28,7 @@ dependencies {
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.yaml:snakeyaml")
     implementation("io.micronaut.validation:micronaut-validation")
-    implementation("com.sendgrid:sendgrid-java:4.10.1")
+    implementation("com.sendgrid:sendgrid-java:4.10.2")
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
