@@ -30,7 +30,7 @@ dependencies {
     implementation("io.micronaut.validation:micronaut-validation")
     implementation("com.sendgrid:sendgrid-java:4.10.3")
 
-    testImplementation(platform("org.junit:junit-bom:5.13.3"))
+    testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("com.approvaltests:approvaltests:24.22.0")
