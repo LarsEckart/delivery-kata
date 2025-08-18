@@ -35,8 +35,8 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.27.4")
     testImplementation("com.approvaltests:approvaltests:25.0.23")
     testImplementation("com.larseckart:junit-tcr-extensions:1.0.0")
-    testImplementation("org.mockito:mockito-core:5.18.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.18.0")
+    testImplementation("org.mockito:mockito-core:5.19.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.19.0")
 }
 
 tasks.withType(JavaCompile) {
